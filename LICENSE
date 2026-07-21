@@ -19,9 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This project vendors the pybmap protocol layer from aaronsb/bosectl under
-ref-bosectl/, which is also MIT licensed (Copyright (c) 2026 Aaron Bockelie).
-See ref-bosectl/LICENSE for its full text.
