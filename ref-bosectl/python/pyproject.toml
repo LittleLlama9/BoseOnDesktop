@@ -1,0 +1,38 @@
+[project]
+name = "pybmap"
+version = "0.3.0"
+description = "Control Bluetooth audio devices over the BMAP protocol"
+readme = "../README.md"
+license = "MIT"
+requires-python = ">=3.6"
+authors = [
+    {name = "Aaron Bockelie"},
+]
+keywords = ["bluetooth", "bmap", "headphones", "audio", "noise-cancellation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: System :: Hardware",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/abock/bose-headphones"
+Repository = "https://github.com/abock/bose-headphones"
+
+[project.scripts]
+bosectl = "pybmap.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: requires a paired Bluetooth device",
+]

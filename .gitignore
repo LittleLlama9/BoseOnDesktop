@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# PyInstaller build output
+/build/
+/dist/
+*.manifest
+
+# Logs and local state
+*.log
+*.spec.bak
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local device settings written at runtime
+*.settings.json
+
+# Development-only reverse-engineering material (kept out of the published repo)
+# Decompiled third-party APK resources (proprietary, must not be redistributed):
+apk-re/
+# Raw protocol captures and live hardware harness (may contain device addresses):
+captures/
+
+# Root-level RE / probe scratch scripts. Track only the app entry point and the
+# build spec; ignore every other loose script at the repo root.
+/*.py
+!/boseondesktop_tray.py
+/*.ps1

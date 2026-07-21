@@ -1,0 +1,8 @@
+# Runtime dependencies for Bose on Desktop.
+# The BMAP protocol layer (pybmap) is vendored under ref-bosectl/ and installed
+# separately: py -m pip install -e ref-bosectl/python
+pyserial>=3.5
+pywebview>=5.0
+pystray>=0.19
+Pillow>=10.0
+hidapi>=0.14

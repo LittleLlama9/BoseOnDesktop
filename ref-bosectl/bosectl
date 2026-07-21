@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""bosectl — Control headphones over BMAP.
+
+Works both as a standalone script (no install needed) and as an installed
+entry point via `pip install pybmap`.
+"""
+import os
+import sys
+
+# If pybmap isn't installed, add the python/ directory to the path so
+# the library can be found without `pip install`.
+try:
+    import pybmap  # noqa: F401
+except ImportError:
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "python"))
+
+from pybmap.cli import main
+main()

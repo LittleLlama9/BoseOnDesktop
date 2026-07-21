@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Bose on Desktop</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+
+  <div id="conn-banner"><span class="cb-dot"></span>Not connected</div>
+
+  <!-- ===================== HOME ===================== -->
+  <section class="screen" data-screen="home">
+    <header class="topbar">
+      <div class="icon-btn ghost"></div>
+      <div class="topbar-title">Bose QC Ultra Headphones</div>
+      <button class="icon-btn" data-nav="settings" title="Settings" data-ico="gear"></button>
+    </header>
+
+    <div class="scroll">
+      <div class="hp-hero">
+        <div class="hero-badge" id="hero-badge" data-ico="quiet" data-nav="noise"></div>
+        <div class="hero-mode" id="hero-mode">--</div>
+        <div class="hero-sub" id="hero-sub"></div>
+        <div class="battery-row">
+          <span class="batt-glyph" id="batt-glyph"></span>
+          <span class="batt-pct" id="batt-pct">--%</span>
+        </div>
+      </div>
+
+      <div class="volume-strip"><span class="vol-ico" data-ico="speaker"></span></div>
+
+      <div class="tiles">
+        <button class="tile" data-nav="modes">
+          <span class="tile-ico" data-ico="modes"></span><span>Modes</span>
+        </button>
+        <button class="tile" data-nav="bluetooth">
+          <span class="tile-ico" data-ico="bt"></span><span>Source</span>
+        </button>
+        <button class="tile" data-nav="noise">
+          <span class="tile-ico" data-ico="immersion"></span><span>Immersive Audio</span>
+        </button>
+        <button class="tile" data-nav="eq">
+          <span class="tile-ico" data-ico="eq"></span><span>EQ</span>
+        </button>
+        <button class="tile" data-nav="settings">
+          <span class="tile-ico" data-ico="shortcut"></span><span>Shortcut</span>
+        </button>
+        <button class="tile" data-nav="settings">
+          <span class="tile-ico" data-ico="tips"></span><span>Tips</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MODES ===================== -->
+  <section class="screen" data-screen="modes" hidden>
+    <header class="topbar">
+      <button class="icon-btn close" data-nav="home" title="Close" data-ico="x"></button>
+      <div class="icon-btn ghost"></div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <div class="title-row">
+        <h1 class="page-title">Modes</h1>
+        <button class="round-btn" data-nav="settings" data-ico="gear-sm"></button>
+      </div>
+      <p class="page-sub">Quickly apply audio preferences for everyday scenarios.
+        Access any mode from the app, or your favorites directly on the product.</p>
+      <div class="mode-list" id="mode-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== NOISE / MODE DETAIL ===================== -->
+  <section class="screen" data-screen="noise" hidden>
+    <header class="topbar">
+      <button class="icon-btn close" data-nav="home" title="Close" data-ico="x"></button>
+      <div class="icon-btn ghost"></div>
+      <button class="icon-btn" id="noise-fav" data-ico="star"></button>
+    </header>
+    <div class="scroll centered">
+      <div class="mode-badge" id="noise-badge"></div>
+      <div class="mode-badge-name"><span id="noise-mode-name">Focus</span><span class="edit-pen" data-ico="pen"></span></div>
+
+      <h2 class="section-label left">Noise Control</h2>
+      <div class="nc-slider" id="nc-slider">
+        <div class="nc-fill" id="nc-fill"></div>
+        <div class="nc-ticks" id="nc-ticks"></div>
+        <div class="nc-label">Noise Cancellation</div>
+      </div>
+      <p class="hint" id="nc-locked-note" hidden>This is a preset mode. Its noise level is fixed. Create or edit a custom mode to change the level.</p>
+
+      <div class="card row" id="wind-card">
+        <span class="row-ico" data-ico="wind"></span>
+        <span class="row-title">Wind Block</span>
+        <button class="pill-btn" id="wind-btn">Apply</button>
+      </div>
+      <p class="hint">Wind Block reduces noise in windy situations like walking outside.
+        This feature automatically adjusts noise cancellation.</p>
+
+      <h2 class="section-label left">Immersive Audio</h2>
+      <p class="hint left">Enhance and add depth to your content with Immersive Audio.</p>
+      <div class="segmented" id="spatial-seg">
+        <button data-val="0"><span class="seg-ico" data-ico="sp-off"></span>Off</button>
+        <button data-val="1"><span class="seg-ico" data-ico="sp-still"></span>Still</button>
+        <button data-val="2"><span class="seg-ico" data-ico="sp-motion"></span>Motion</button>
+      </div>
+      <p class="hint" id="spatial-hint">Immersive Audio is off.</p>
+
+      <button class="delete-mode-btn" id="delete-mode-btn" hidden>Delete Mode</button>
+    </div>
+  </section>
+
+  <!-- ===================== BLUETOOTH ===================== -->
+  <section class="screen" data-screen="bluetooth" hidden>
+    <header class="topbar">
+      <button class="icon-btn close" data-nav="home" title="Close" data-ico="x"></button>
+      <div class="topbar-title">Bluetooth</div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <p class="page-sub grey-block">Manage connections for Bose QC Ultra Headphones.</p>
+      <div class="li plain"><span class="row-title">Multi-point Connection</span>
+        <label class="switch"><input type="checkbox" id="mp-toggle"><span class="track"></span></label></div>
+      <p class="hint grey-block">Connect to two devices at once and switch between them.
+        Turning off multi-point will disconnect Bose QC Ultra Headphones from the second device.</p>
+      <h2 class="section-label">Paired Devices</h2>
+      <div id="paired-list" class="paired-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== EQ ===================== -->
+  <section class="screen" data-screen="eq" hidden>
+    <header class="topbar">
+      <button class="icon-btn close" data-nav="home" title="Close" data-ico="x"></button>
+      <div class="topbar-title">Equalizer</div>
+      <button class="text-btn" id="eq-reset">Reset</button>
+    </header>
+    <div class="scroll">
+      <div class="eq-vals">
+        <div><div class="eq-band-label">Bass</div><div class="eq-band-val" id="eq-bass-val">0</div></div>
+        <div><div class="eq-band-label">Mid</div><div class="eq-band-val" id="eq-mid-val">0</div></div>
+        <div><div class="eq-band-label">Treble</div><div class="eq-band-val" id="eq-treble-val">0</div></div>
+      </div>
+      <div class="eq-curve"><canvas id="eq-canvas" width="320" height="190"></canvas></div>
+      <div class="eq-presets">
+        <button data-eq="bass+">Bass Boost</button>
+        <button data-eq="bass-">Bass Reducer</button>
+        <button data-eq="treble+">Treble Boost</button>
+        <button data-eq="treble-">Treble Reducer</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <section class="screen" data-screen="settings" hidden>
+    <header class="topbar">
+      <button class="icon-btn close" data-nav="home" title="Close" data-ico="x"></button>
+      <div class="topbar-title"></div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <h1 class="page-title big">Settings</h1>
+
+      <h2 class="section-label">About</h2>
+      <div class="card list">
+        <button class="li nav" data-sub="rename"><span>Product Name</span><span class="li-val" id="set-name">Bose QC Ultra Hea...</span><span class="chev"></span></button>
+        <button class="li nav" data-sub="productupdate"><span>Product Update</span><span class="chev"></span></button>
+        <button class="li nav" data-link="tips"><span>Product Tips</span><span class="chev"></span></button>
+      </div>
+
+      <h2 class="section-label">Connections</h2>
+      <div class="card list">
+        <button class="li nav" data-nav="bluetooth"><span>Bluetooth Connections</span><span class="chev"></span></button>
+      </div>
+
+      <h2 class="section-label">Product Control</h2>
+      <div class="card list">
+        <button class="li nav" data-sub="shortcut"><span>Shortcut</span><span class="li-val" id="set-shortcut"></span><span class="chev"></span></button>
+      </div>
+
+      <h2 class="section-label">Sound</h2>
+      <div class="card list">
+        <button class="li nav" data-nav="modes"><span>Modes</span><span class="chev"></span></button>
+        <button class="li nav" data-nav="noise"><span>Immersive Audio</span><span class="chev"></span></button>
+        <button class="li nav" data-nav="eq"><span>Equalizer</span><span class="chev"></span></button>
+      </div>
+
+      <h2 class="section-label">Preferences</h2>
+      <div class="card list">
+        <button class="li nav" data-sub="selfvoice"><span>Self Voice</span><span class="li-val" id="sv-val">Medium</span><span class="chev"></span></button>
+        <button class="li nav" data-sub="autooff"><span>Auto-Off</span><span class="li-val" id="ao-val">Never</span><span class="chev"></span></button>
+        <button class="li nav" data-sub="onhead"><span>On-Head Detection</span><span class="chev"></span></button>
+        <button class="li nav" data-sub="prompts"><span>Voice Prompts</span><span class="li-val" id="vp-val"></span><span class="chev"></span></button>
+      </div>
+
+      <h2 class="section-label">Support</h2>
+      <div class="card list">
+        <button class="li nav" data-sub="techinfo"><span>Technical Info</span><span class="chev"></span></button>
+        <button class="li nav" data-link="faq"><span>Common Questions</span><span class="chev"></span></button>
+      </div>
+
+      <h2 class="section-label">App</h2>
+      <div class="card list">
+        <div class="li"><span>Speak mode on hotkey</span>
+          <label class="switch"><input type="checkbox" id="app-speak"><span class="track"></span></label></div>
+        <div class="li"><span>Start on login</span>
+          <label class="switch"><input type="checkbox" id="app-autostart"><span class="track"></span></label></div>
+      </div>
+      <div class="card list" id="hotkey-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: Self Voice ===================== -->
+  <section class="screen" data-screen="selfvoice" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="icon-btn ghost"></div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <h1 class="page-title">Self Voice</h1>
+      <p class="page-sub">Adjust how much of your own voice you can hear while on a call.</p>
+      <div class="card list radio-list" id="sv-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: Auto-Off ===================== -->
+  <section class="screen" data-screen="autooff" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="topbar-title">Auto-Off</div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <div class="card list radio-list flat" id="ao-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: On-Head ===================== -->
+  <section class="screen" data-screen="onhead" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="topbar-title">On-Head Detection</div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <p class="page-sub grey-block">On-Head detection uses sensors to know when you're wearing your headphones.</p>
+      <div class="card list flat">
+        <div class="li col"><div class="li-main"><span>Auto Play/Pause</span>
+          <label class="switch"><input type="checkbox" id="oh-pause"><span class="track"></span></label></div>
+          <p class="li-desc">Audio pauses when you remove the headphones and resumes when you wear the headphones.</p></div>
+        <div class="li col"><div class="li-main"><span>Auto Answer Call</span>
+          <label class="switch"><input type="checkbox" id="oh-answer"><span class="track"></span></label></div>
+          <p class="li-desc">Answers a phone call when you wear the headphones.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: Shortcut ===================== -->
+  <section class="screen" data-screen="shortcut" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="topbar-title">Shortcut</div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <h1 class="page-title">Shortcut</h1>
+      <p class="page-sub" id="shortcut-hint">Touch and hold the volume strip on the right earcup to use your shortcut.</p>
+      <div class="card list">
+        <div class="li"><span>Shortcut</span>
+          <label class="switch"><input type="checkbox" id="shortcut-toggle"><span class="track"></span></label>
+        </div>
+      </div>
+      <div class="card list radio-list shortcut-radio" id="shortcut-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: Voice Prompts ===================== -->
+  <section class="screen" data-screen="prompts" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="topbar-title">Voice Prompts</div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <p class="page-sub grey-block">Voice prompts announce status like connections and battery level.</p>
+      <div class="card list flat">
+        <div class="li"><span>Voice Prompts</span><span class="li-val" id="vp-state">--</span></div>
+        <div class="li"><span>Language</span><span class="li-val" id="vp-lang">--</span></div>
+      </div>
+      <p class="hint" id="vp-note">Voice prompts are read-only over this connection on 1st gen headphones. Toggle them from the Bose mobile app.</p>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: Technical Info ===================== -->
+  <section class="screen" data-screen="techinfo" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="topbar-title">Technical Info</div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <div class="card list flat">
+        <div class="li"><span>Model</span><span class="li-val" id="ti-model">--</span></div>
+        <div class="li"><span>Firmware</span><span class="li-val" id="ti-fw">--</span></div>
+        <div class="li"><span>Product ID</span><span class="li-val" id="ti-pid">--</span></div>
+        <div class="li"><span>Codename</span><span class="li-val" id="ti-code">--</span></div>
+        <div class="li"><span>Platform</span><span class="li-val" id="ti-plat">--</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: Product Update ===================== -->
+  <section class="screen" data-screen="productupdate" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="topbar-title">Product Update</div>
+      <div class="icon-btn ghost"></div>
+    </header>
+    <div class="scroll">
+      <div class="card list flat">
+        <div class="li"><span>Installed Version</span><span class="li-val" id="pu-fw">--</span></div>
+      </div>
+      <p class="hint">Firmware updates for the QC Ultra Headphones are delivered by the Bose mobile app. This desktop app reads and controls settings only and does not install firmware.</p>
+    </div>
+  </section>
+
+  <!-- ===================== SUB: Rename ===================== -->
+  <section class="screen" data-screen="rename" hidden>
+    <header class="topbar">
+      <button class="icon-btn back" data-nav="settings" title="Back" data-ico="chevL"></button>
+      <div class="topbar-title">Product Name</div>
+      <button class="text-btn" id="rename-save">Save</button>
+    </header>
+    <div class="scroll">
+      <p class="page-sub">This name appears when connecting over Bluetooth.</p>
+      <div class="card list flat">
+        <input type="text" id="rename-input" class="text-input" maxlength="32" placeholder="Headphone name">
+      </div>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" hidden></div></div>
+<script src="icons.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
