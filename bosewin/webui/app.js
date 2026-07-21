@@ -70,6 +70,18 @@ function api(method, ...args) {
         firmware: "1.6.7", product_id: "0x4066", codename: "lonestarr", platform: "OTG-QCC-514x" });
       else if (method === "open_url") res({ ok: true });
       else if (method === "set_name") res({ ok: true });
+      else if (method === "add_mode") {
+        const nm = String(args[0] || "").trim();
+        const used = MOCK_STATE.modes.map((m) => m.idx);
+        let slot = 3; while (used.includes(slot)) slot++;
+        MOCK_STATE.modes.forEach((m) => { m.active = false; });
+        MOCK_STATE.modes.push({ idx: slot, name: nm, editable: true,
+          configured: true, cnc_app: 10, spatial: 0, anc: true, active: true });
+        MOCK_STATE.mode_idx = slot; MOCK_STATE.mode_name = nm;
+        MOCK_STATE.editable = true; MOCK_STATE.cnc_app = 10;
+        MOCK_STATE.spatial = 0; MOCK_STATE.anc = true;
+        res(JSON.parse(JSON.stringify(MOCK_STATE)));
+      }
       else res(JSON.parse(JSON.stringify(MOCK_STATE)));
     }, 40);
   });
@@ -183,8 +195,12 @@ function render() {
   const add = document.createElement("div");
   add.className = "mode-add";
   add.innerHTML = `<button class="mode-add-btn" data-ico="plus"></button>`;
-  add.querySelector(".mode-add-btn").onclick = () =>
-    toast("New modes are created in the Bose mobile app.");
+  add.querySelector(".mode-add-btn").onclick = () => {
+    const inp = document.getElementById("newmode-input");
+    if (inp) inp.value = "";
+    show("newmode");
+    if (inp) setTimeout(() => inp.focus(), 30);
+  };
   list.appendChild(add);
   paintIcons(list);
 
@@ -515,6 +531,21 @@ function wire() {
       toast("Name updated.");
       show("settings");
     } else { toast((r && r.error) || "Could not rename."); }
+  });
+  const nmSave = document.getElementById("newmode-save");
+  if (nmSave) nmSave.addEventListener("click", async () => {
+    const inp = document.getElementById("newmode-input");
+    const name = (inp.value || "").trim();
+    if (!name) { toast("Enter a mode name."); return; }
+    if (busy) return; busy = true;
+    try {
+      const st = await api("add_mode", name);
+      if (st && st.modes) { STATE = st; render(); }
+      if (st && st.error) { toast(st.error); return; }
+      toast("Mode created.");
+      show("modes");
+    } catch (e) { toast(String(e)); }
+    finally { busy = false; }
   });
   document.getElementById("spatial-seg").querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", () => act("set_spatial", Number(btn.dataset.val)));

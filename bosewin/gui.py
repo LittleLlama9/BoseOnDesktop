@@ -404,6 +404,43 @@ class Controller:
             self.state["error"] = str(e)
         return self.state
 
+    def add_mode(self, name, cnc_level=0, spatial=0, anc_toggle=1):
+        """Create a custom mode in the first free editable slot via
+        create_profile -- the inverse of delete_mode (both write ModeConfig
+        [31.6], verified reversible on gen-1 fw 1.6.7). Creates it, switches to
+        it, and reads the new slot back, all in ONE connection so the write and
+        its verification share a single BT/USB link (opening a fresh link per
+        step made rapid SPP reconnects drop as 'disconnected').
+
+        wind_block is forced 0: on gen-1 it is a one-shot 'force max ANC'
+        TRIGGER, not persisted state, so sending 1 would clamp the new mode's
+        noise level to max instead of honouring cnc_level. cnc_level is the
+        device byte (0 = full noise cancellation). create_profile raises if
+        every editable slot (3-9) is already configured."""
+        name = (name or "").strip()
+        if not name:
+            self.state["error"] = "Enter a mode name"
+            return self.state
+
+        def act(dev):
+            slot = dev.create_profile(name, cnc_level=cnc_level,
+                                      spatial=spatial, wind_block=0,
+                                      anc_toggle=anc_toggle)
+            dev.set_mode_idx(slot)
+            mc = dev.mode_config(slot, drain=False)
+            return slot, mc, dev.battery()
+        try:
+            slot, mc, batt = self._do(act)
+            self._store_active(slot, mc, batt)
+            self.state["connected"] = True
+            self.state["error"] = ""
+        except BmapConnectionError:
+            self.state["connected"] = False
+            self.state["error"] = "disconnected"
+        except BmapError as e:
+            self.state["error"] = str(e)
+        return self.state
+
 
 def _battery_icon(pct, connected):
     """Draw a small battery glyph with the percentage number."""

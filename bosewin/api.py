@@ -121,6 +121,14 @@ class Api:
         self._ctrl.delete_mode(int(idx))
         return self._serialize()
 
+    def add_mode(self, name):
+        """Create a new custom mode named `name` (device-side, editable). Its
+        noise level / Immersive Audio / ANC are tuned afterwards via the mode
+        detail screen. Returns the full refreshed state (with `error` set if
+        the name was empty or every custom slot is full)."""
+        self._ctrl.add_mode(str(name))
+        return self._serialize()
+
     def set_cnc_app(self, level):
         self._ctrl.set_cnc_app(int(level))
         return self._serialize()
