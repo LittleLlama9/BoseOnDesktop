@@ -346,11 +346,24 @@ class Api:
         except Exception:
             pass
         try:
-            from bosewin.hotkeys import HOTKEY_LABELS
-            out["hotkeys"] = dict(HOTKEY_LABELS)
+            out["hotkeys"] = self._ctrl.get_hotkeys()
         except Exception:
             pass
         return out
+
+    def set_hotkey(self, action, chord):
+        try:
+            hotkeys = self._ctrl.set_hotkey(str(action), str(chord))
+            return {"ok": True, "hotkeys": hotkeys}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def clear_hotkey(self, action):
+        try:
+            hotkeys = self._ctrl.clear_hotkey(str(action))
+            return {"ok": True, "hotkeys": hotkeys}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
 
     def toggle_speak(self):
         try:

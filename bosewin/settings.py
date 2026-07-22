@@ -10,6 +10,15 @@ import os
 
 _DEFAULTS = {
     "speak_mode": True,   # announce the mode name aloud on a hotkey mode change
+    # Global keyboard shortcuts: action name -> chord string. Actions are
+    # "mode_<slot>" (0-9) and "mode_cycle". Kept as strings so the file stays
+    # human-readable; hotkeys.parse_chord turns them into Win32 (mods, vk).
+    "hotkeys": {
+        "mode_0": "Ctrl+Alt+Q",
+        "mode_1": "Ctrl+Alt+W",
+        "mode_2": "Ctrl+Alt+E",
+        "mode_cycle": "Ctrl+Alt+N",
+    },
 }
 
 

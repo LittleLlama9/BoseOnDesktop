@@ -35,7 +35,7 @@ const MOCK_EXTRAS = { name: "Bose QC Ultra Headphones", firmware: "1.6.7",
   paired: [{ mac: "AA:BB", name: "HOOPOE" }, { mac: "CC:DD", name: "Matthew's iPhone" }],
   eq: { bass: -3, mid: 0, treble: 0 }, prompts: { enabled: true, language: "English" }, error: "" };
 const MOCK_APP = { speak_mode: true, autostart: false,
-  hotkeys: { mode_quiet: "Ctrl+Alt+Q", mode_aware: "Ctrl+Alt+W", mode_immersion: "Ctrl+Alt+E", mode_cycle: "Ctrl+Alt+N" } };
+  hotkeys: { mode_0: "Ctrl+Alt+Q", mode_1: "Ctrl+Alt+W", mode_2: "Ctrl+Alt+E", mode_cycle: "Ctrl+Alt+N" } };
 const MOCK_SHORTCUT_OPTS = [
   { action: "BatteryLevel", label: "Hear Battery Level", icon: "battery",
     desc: "A voice prompt announces the battery level of your headphones." },
@@ -70,6 +70,17 @@ function api(method, ...args) {
         firmware: "1.6.7", product_id: "0x4066", codename: "lonestarr", platform: "OTG-QCC-514x" });
       else if (method === "open_url") res({ ok: true });
       else if (method === "set_name") res({ ok: true });
+      else if (method === "set_hotkey") {
+        const dup = Object.entries(MOCK_APP.hotkeys)
+          .some(([k, v]) => k !== args[0] && v === args[1]);
+        if (dup) { res({ ok: false, error: args[1] + " is already in use" }); return; }
+        MOCK_APP.hotkeys[args[0]] = args[1];
+        res({ ok: true, hotkeys: JSON.parse(JSON.stringify(MOCK_APP.hotkeys)) });
+      }
+      else if (method === "clear_hotkey") {
+        delete MOCK_APP.hotkeys[args[0]];
+        res({ ok: true, hotkeys: JSON.parse(JSON.stringify(MOCK_APP.hotkeys)) });
+      }
       else if (method === "add_mode") {
         const nm = String(args[0] || "").trim();
         const used = MOCK_STATE.modes.map((m) => m.idx);
@@ -249,6 +260,11 @@ function render() {
   document.getElementById("oh-answer").checked = !!s.auto_answer;
 
   buildRadioLists();
+
+  // Keep the per-mode hotkey list in sync if the settings screen is open and
+  // the user isn't mid-capture (e.g. STATE arrived after Settings was opened,
+  // or a mode was just created/deleted).
+  if (current === "settings" && !hkCapture) renderHotkeys(APP_HOTKEYS);
 }
 
 function capitalize(x) { return x ? x[0].toUpperCase() + x.slice(1) : x; }
@@ -358,18 +374,103 @@ async function loadExtras() {
   if (app) {
     document.getElementById("app-speak").checked = !!app.speak_mode;
     document.getElementById("app-autostart").checked = !!app.autostart;
-    const hk = document.getElementById("hotkey-list");
-    hk.innerHTML = "";
-    Object.entries(app.hotkeys || {}).forEach(([k, label]) => {
-      const nice = { mode_quiet: "Quiet", mode_aware: "Aware",
-        mode_immersion: "Immersion", mode_cycle: "Cycle modes" }[k] || k;
-      const row = document.createElement("div");
-      row.className = "li";
-      row.innerHTML = `<span>${nice}</span><span class="li-val">${label}</span>`;
-      hk.appendChild(row);
-    });
+    renderHotkeys(app.hotkeys || {});
   }
   loadShortcutSummary();
+}
+
+// ---- configurable hotkeys ----
+let hkCapture = null;   // { action, chip } while listening for a chord
+let APP_HOTKEYS = {};   // last-known action -> chord map, for re-render on state load
+
+function renderHotkeys(hotkeys) {
+  APP_HOTKEYS = hotkeys || APP_HOTKEYS || {};
+  const hk = document.getElementById("hotkey-list");
+  if (!hk) return;
+  cancelCapture();
+  hk.innerHTML = "";
+  const rows = [];
+  ((STATE && STATE.modes) || [])
+    .filter((m) => m.name && m.name.toLowerCase() !== "none")
+    .forEach((m) => rows.push({ action: "mode_" + m.idx, label: m.name }));
+  rows.push({ action: "mode_cycle", label: "Cycle modes" });
+  rows.forEach(({ action, label }) => {
+    const chord = APP_HOTKEYS[action] || "";
+    const row = document.createElement("button");
+    row.className = "li nav hotkey-row";
+    row.innerHTML = `<span>${label}</span>`
+      + `<span class="li-val hotkey-chip${chord ? "" : " unset"}">${chord || "Not set"}</span>`;
+    row.addEventListener("click", () =>
+      startCapture(action, row.querySelector(".hotkey-chip")));
+    hk.appendChild(row);
+  });
+}
+
+function startCapture(action, chip) {
+  cancelCapture();
+  hkCapture = { action, chip };
+  chip.textContent = "Press keys\u2026";
+  chip.classList.add("capturing");
+  chip.classList.remove("unset");
+  document.addEventListener("keydown", onCaptureKey, true);
+}
+
+function cancelCapture() {
+  if (!hkCapture) return;
+  document.removeEventListener("keydown", onCaptureKey, true);
+  hkCapture = null;
+}
+
+function keyFromCode(code) {
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3);
+  if (/^Digit[0-9]$/.test(code)) return code.slice(5);
+  if (/^F([1-9]|1[0-2])$/.test(code)) return code;
+  return HK_NAMED[code] || null;
+}
+
+// e.code -> canonical token for non-typing keys that may be bound alone.
+const HK_NAMED = { ArrowLeft: "Left", ArrowRight: "Right", ArrowUp: "Up",
+  ArrowDown: "Down", Home: "Home", End: "End", PageUp: "PageUp",
+  PageDown: "PageDown", Insert: "Insert" };
+// Keys allowed with NO modifier (arrows, nav, F-keys don't collide with typing).
+const HK_BARE_OK = new Set([
+  "Left", "Right", "Up", "Down", "PageUp", "PageDown", "Home", "End", "Insert",
+  "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"]);
+
+function chordFromEvent(e) {
+  const key = keyFromCode(e.code);
+  if (!key) return null;
+  const hasMod = e.ctrlKey || e.altKey || e.metaKey;
+  if (!hasMod && !HK_BARE_OK.has(key)) return null;
+  const parts = [];
+  if (e.ctrlKey) parts.push("Ctrl");
+  if (e.altKey) parts.push("Alt");
+  if (e.shiftKey) parts.push("Shift");
+  if (e.metaKey) parts.push("Win");
+  parts.push(key);
+  return parts.join("+");
+}
+
+async function onCaptureKey(e) {
+  if (!hkCapture) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const k = e.key;
+  if (k === "Escape") { cancelCapture(); loadExtras(); return; }
+  if (["Control", "Alt", "Shift", "Meta", "OS"].includes(k)) return;  // wait for the real key
+  const action = hkCapture.action;
+  if (k === "Delete" || k === "Backspace") {
+    cancelCapture();
+    const r = await api("clear_hotkey", action);
+    if (r && r.hotkeys) renderHotkeys(r.hotkeys); else loadExtras();
+    return;
+  }
+  const chord = chordFromEvent(e);
+  if (!chord) { toast("Use an arrow or F-key on its own, or Ctrl/Alt/Win plus a letter or number."); return; }
+  cancelCapture();
+  const r = await api("set_hotkey", action, chord);
+  if (r && r.ok && r.hotkeys) { renderHotkeys(r.hotkeys); toast("Shortcut saved."); }
+  else { toast((r && r.error) || "Could not set shortcut."); loadExtras(); }
 }
 
 const SHORTCUT_LABELS = { VPA: "Access Your Voice Assistant", SpotifyGo: "Spotify",

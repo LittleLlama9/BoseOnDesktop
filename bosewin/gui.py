@@ -62,6 +62,8 @@ class Controller:
         self._port = port
         self._device = device
         self._lock = threading.Lock()
+        self._hm = None            # HotkeyManager, attached in main()
+        self._hk_callbacks = None  # full action -> callback map
         self.state = {
             "connected": False,
             "battery": None,
@@ -441,6 +443,48 @@ class Controller:
             self.state["error"] = str(e)
         return self.state
 
+    # ---- hotkeys (persisted, applied live) --------------------------------
+
+    def attach_hotkeys(self, hm, callbacks):
+        """Called once from main() so the Controller can rebind hotkeys live
+        when the user edits them from the Settings page."""
+        self._hm = hm
+        self._hk_callbacks = dict(callbacks)
+
+    def get_hotkeys(self):
+        """Persisted action -> chord map (strings), e.g. {'mode_0': 'Ctrl+Alt+Q'}."""
+        from bosewin import settings
+        hk = settings.get("hotkeys")
+        return dict(hk) if isinstance(hk, dict) else {}
+
+    def _apply_hotkeys(self, stored):
+        if self._hm is not None:
+            self._hm.rebind(stored)
+
+    def set_hotkey(self, action, chord):
+        """Validate + persist a chord for an action, then apply it live.
+        Raises ValueError on a bad chord or a duplicate already in use."""
+        from bosewin import settings, hotkeys as hk
+        action = str(action)
+        canon = hk.canonical_chord(chord)  # raises ValueError if invalid
+        stored = self.get_hotkeys()
+        for other, other_chord in stored.items():
+            if other != action and other_chord == canon:
+                raise ValueError("%s is already in use" % canon)
+        stored[action] = canon
+        settings.set("hotkeys", stored)
+        self._apply_hotkeys(stored)
+        return stored
+
+    def clear_hotkey(self, action):
+        """Remove an action's chord and apply the change live."""
+        from bosewin import settings
+        stored = self.get_hotkeys()
+        stored.pop(str(action), None)
+        settings.set("hotkeys", stored)
+        self._apply_hotkeys(stored)
+        return stored
+
 
 def _battery_icon(pct, connected):
     """Draw a small battery glyph with the percentage number."""
@@ -653,11 +697,21 @@ def _announce_mode(ctrl, idx):
         pass
 
 
-def _hotkey_callbacks(icon, ctrl):
-    """Map hotkey action names to functions. switch_mode already syncs the
-    cache fast (~0.1s), so we redraw from cache without another device read."""
+def _all_hotkey_callbacks(icon, ctrl):
+    """Build callbacks for every mode slot (mode_0..mode_9) plus mode_cycle.
+    switch_mode already syncs the cache fast (~0.1s), so we redraw from cache
+    without another device read. Slot callbacks guard against empty custom
+    slots so a stale binding never switches to an unconfigured mode."""
     def _mode(idx):
         def go():
+            if idx > 2:  # presets 0-2 are always valid; guard custom slots
+                table = ctrl.state.get("modes") or {}
+                lbl = table.get(idx)
+                if not (lbl and lbl[0] and lbl[0] != "None"):
+                    ctrl.refresh(full=True)
+                    lbl = (ctrl.state.get("modes") or {}).get(idx)
+                    if not (lbl and lbl[0] and lbl[0] != "None"):
+                        return
             ctrl.switch_mode(idx)
             _announce_mode(ctrl, idx)
             _redraw(icon, ctrl)
@@ -683,12 +737,9 @@ def _hotkey_callbacks(icon, ctrl):
         _announce_mode(ctrl, nxt)
         _redraw(icon, ctrl)
 
-    return {
-        "mode_quiet": _mode(0),
-        "mode_aware": _mode(1),
-        "mode_immersion": _mode(2),
-        "mode_cycle": _cycle,
-    }
+    cbs = {"mode_%d" % idx: _mode(idx) for idx in range(10)}
+    cbs["mode_cycle"] = _cycle
+    return cbs
 
 
 def main():
@@ -704,8 +755,12 @@ def main():
     hm = None
     try:
         from bosewin.hotkeys import HotkeyManager
-        hm = HotkeyManager(_hotkey_callbacks(icon, ctrl))
+        from bosewin import settings
+        callbacks = _all_hotkey_callbacks(icon, ctrl)
+        bindings = settings.get("hotkeys")
+        hm = HotkeyManager(callbacks, bindings=bindings)
         hm.start()
+        ctrl.attach_hotkeys(hm, callbacks)
     except Exception:
         hm = None
 
